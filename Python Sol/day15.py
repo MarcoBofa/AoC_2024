@@ -1,126 +1,189 @@
 from collections import deque
-from heapq import heappush, heappop
+import copy
 
-lines = open("day16.txt").read().strip()
-c = lines.split('\n')
-matrix = [list(r) for r in c]
+lines = open("day15.txt").read().strip()
+matrix = lines.split('\n')
 
-m, n = len(matrix), len(matrix[0])
+grid = []
+moves = []
+robR, robC = 0, 0
 
-start = (m-2, 1)
-end = (1, n-2)
+i = 0
+row = matrix[i]
+while "<" not in row and row:
+    if "@" in row:
+        robR = i
+        for j in range(len(row)):
+            if row[j] == "@":
+                robC = j
+    grid.append(list(row))
+    i+=1
+    row = matrix[i]
+
+i += 1
+while i < len(matrix):
+    moves.extend(matrix[i])
+    i += 1
+
+old_grid = [row.copy() for row in grid]
+
+
+m = len(grid)
+n = len(grid[0])
 
 DIRS = {
-    'up':    (-1, 0),
-    'right': (0, 1),
-    'down':  (1, 0),
-    'left':  (0, -1)
+    "^": (-1,0),
+    ">": (0, 1),
+    "<": (0, -1),
+    "v": (1, 0),
 }
 
-TURN_LEFT = {
-    'up': 'left',
-    'left': 'down',
-    'down': 'right',
-    'right': 'up'
-}
+def move_robot(r, c, move):
+    deltaR, deltaC = DIRS[move]
+    nextR, nextC = r + deltaR, c + deltaC
 
-TURN_RIGHT = {
-    'up': 'right',
-    'right': 'down',
-    'down': 'left',
-    'left': 'up'
-}
+    if grid[nextR][nextC] == "#":
+        return r, c
+    elif grid[nextR][nextC] == ".":
+        grid[r][c] = "."
+        grid[nextR][nextC] = "@"
+        return nextR, nextC
+    else:
+        while grid[nextR][nextC] == "O":
+            nextR += deltaR
+            nextC += deltaC
+        if grid[nextR][nextC] == "#":
+            return r, c
+        elif grid[nextR][nextC] == ".":
+            grid[r][c] = "."
+            grid[r+deltaR][c+deltaC] = "@"
+            grid[nextR][nextC] = "O"
+            return r+deltaR, c+deltaC
 
-directions = ['up', 'right', 'down', 'left']
+for move in moves:
+    robR, robC = move_robot(robR, robC, move)
 
-dist = {}
-for r in range(m):
-    for c in range(n):
-        for d in directions:
-            dist[(r,c,d)] = float('inf')
+gps = 0
+for i, row in enumerate(grid):
+    for j, val in enumerate(row):
+        if val == "O":
+            gps += 100 * i + j
 
-dist[(start[0], start[1], 'right')] = 0
-pq = []
-heappush(pq, (0, start[0], start[1], 'right'))
-
-while pq:
-    cost, r, c, direction = heappop(pq)
-    if dist[(r,c,direction)] < cost:
-        continue
-
-    if (r,c) == end:
-        final_cost = cost
-        break
-
-    moves = [
-        ('straight', direction, 1),
-        ('left', TURN_LEFT[direction], 1001),
-        ('right', TURN_RIGHT[direction], 1001)
-    ]
-
-    for move_type, new_dir, move_cost in moves:
-        nr, nc = r + DIRS[new_dir][0], c + DIRS[new_dir][1]
-        if matrix[nr][nc] != '#':
-            new_cost = cost + move_cost
-            if dist[(nr,nc,new_dir)] > new_cost:
-                dist[(nr,nc,new_dir)] = new_cost
-                heappush(pq, (new_cost, nr, nc, new_dir))
-
-
-print(f"Part 1 result is: {final_cost}")
+print(f"Part 1 result is: {gps}")
 
 
 ##########################
 ######### Part 2 #########
 ##########################
 
-end_states = []
-for d in directions:
-    if dist[(end[0], end[1], d)] == final_cost:
-        end_states.append((end[0], end[1], d))
+def print_grid(g):
+    for row in g:
+        print("".join(row))
+    print("\n" + "-" * 40 + "\n")
 
-back_visited = set()
-queue = deque(end_states)
-for st in end_states:
-    back_visited.add(st)
+new_grid = []
 
-used_cells = set()
-for (er, ec, ed) in end_states:
-    used_cells.add((er,ec))
+for i, row in enumerate(old_grid):
+    nr = []
+    for j, val in enumerate(row):
+        if val == "#":
+            nr.append("#")
+            nr.append("#")
+        elif val == "O":
+            nr.append("[")
+            nr.append("]")
+        elif val == "@":
+            nr.append("@")
+            nr.append(".")
+        else:
+           nr.append(".")
+           nr.append(".")
 
-while queue:
-    r, c, d = queue.popleft()
-    cur_cost = dist[(r,c,d)]
+    new_grid.append(nr)
 
-    for pdir in directions:
-        pr = r - DIRS[d][0]
-        pc = c - DIRS[d][1]
+for i, row in enumerate(new_grid):
+    for j, val in enumerate(row):
+        if val == "@":
+            robR = i
+            robC = j
 
-        if matrix[pr][pc] != '#':
-            if pdir == d and dist[(pr,pc,pdir)] + 1 == cur_cost:
-                if (pr,pc,pdir) not in back_visited:
-                    back_visited.add((pr,pc,pdir))
-                    queue.append((pr,pc,pdir))
-                    used_cells.add((pr,pc))
 
-        if TURN_LEFT[pdir] == d:
-            pr = r - DIRS[d][0]
-            pc = c - DIRS[d][1]
-            if matrix[pr][pc] != '#':
-                if dist[(pr,pc,pdir)] + 1001 == cur_cost:
-                    if (pr,pc,pdir) not in back_visited:
-                        back_visited.add((pr,pc,pdir))
-                        queue.append((pr,pc,pdir))
-                        used_cells.add((pr,pc))
+# Vertical movement of boxes
+def move_boxes(move, g, r, c):
+    cp = [row.copy() for row in g]
+    deltaR, deltaC = DIRS[move]
 
-        if TURN_RIGHT[pdir] == d:
-            pr = r - DIRS[d][0]
-            pc = c - DIRS[d][1]
-            if matrix[pr][pc] != '#':
-                if dist[(pr,pc,pdir)] + 1001 == cur_cost:
-                    if (pr,pc,pdir) not in back_visited:
-                        back_visited.add((pr,pc,pdir))
-                        queue.append((pr,pc,pdir))
-                        used_cells.add((pr,pc))
+    prev = []
+    next = []
+    prev.append((r,c, "@"))
+    cp[r][c] = "."
 
-print(f"Part 2 result is: {len(used_cells)}")
+    while prev:
+        for i in prev:
+            if g[i[0] + deltaR][i[1]] == "#":
+                return g, False
+            elif g[i[0] + deltaR][i[1]] == "[":
+                next.append((i[0]+deltaR, i[1], "["))
+                next.append((i[0]+deltaR,i[1]+1, "]"))
+
+            elif g[i[0] + deltaR][i[1]] == "]":
+                next.append((i[0]+deltaR, i[1], "]"))
+                next.append((i[0]+deltaR,i[1]-1, "["))
+        
+        for i in next:
+            cp[i[0]][i[1]] = "."
+        for i in prev:
+            cp[i[0]+deltaR][i[1]] = i[2]
+        
+        prev = next.copy()
+        next = []
+    return cp, True
+
+
+def move_robot2(r, c, move):
+    global new_grid
+    deltaR, deltaC = DIRS[move]
+    nextR, nextC = r + deltaR, c + deltaC
+
+    if new_grid[nextR][nextC] == "#":
+        return r, c
+    elif new_grid[nextR][nextC] == ".":
+        new_grid[r][c] = "."
+        new_grid[nextR][nextC] = "@"
+        return nextR, nextC
+    elif move == ">" or move == "<":
+        while new_grid[nextR][nextC] == "[" or new_grid[nextR][nextC] == "]":
+            nextR += deltaR
+            nextC += deltaC
+        if new_grid[nextR][nextC] == "#":
+            return r, c
+        elif new_grid[nextR][nextC] == ".":
+            if move == ">":
+                new_grid[r][c+deltaC:nextC+deltaC] = new_grid[r][c:nextC]
+                new_grid[r][c] = "."
+            else:
+                new_grid[r][nextC:c] = new_grid[r][nextC-deltaC:c-deltaC]
+                new_grid[r][c] = "."
+            return r+deltaR, c+deltaC
+    else:
+        new_grid, check = move_boxes(move, new_grid, r, c)
+
+        if check:   
+            return r+deltaR, c
+        else:
+            return r,c
+            
+for move in moves:
+    robR, robC = move_robot2(robR, robC, move)
+
+gps = 0
+for i, row in enumerate(new_grid):
+    for j, val in enumerate(row):
+        if val == "[":
+            gps += 100 * i + j
+
+print(f"Part 2 result is: {gps}")
+
+
+# Should comment and improve variable naming, oh well
+# Sorry also for the mess :/
