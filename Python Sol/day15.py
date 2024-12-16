@@ -124,6 +124,3 @@ while queue:
                         used_cells.add((pr,pc))
 
 print(f"Part 2 result is: {len(used_cells)}")
-
-
-# This is pretty clear imo, at least better than day 15
