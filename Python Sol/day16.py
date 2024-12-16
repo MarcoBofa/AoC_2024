@@ -96,7 +96,7 @@ while queue:
         pr = r - DIRS[d][0]
         pc = c - DIRS[d][1]
 
-        if 0 <= pr < m and 0 <= pc < n and matrix[pr][pc] != '#':
+        if matrix[pr][pc] != '#':
             if pdir == d and dist[(pr,pc,pdir)] + 1 == cur_cost:
                 if (pr,pc,pdir) not in back_visited:
                     back_visited.add((pr,pc,pdir))
@@ -106,7 +106,7 @@ while queue:
         if TURN_LEFT[pdir] == d:
             pr = r - DIRS[d][0]
             pc = c - DIRS[d][1]
-            if 0 <= pr < m and 0 <= pc < n and matrix[pr][pc] != '#':
+            if matrix[pr][pc] != '#':
                 if dist[(pr,pc,pdir)] + 1001 == cur_cost:
                     if (pr,pc,pdir) not in back_visited:
                         back_visited.add((pr,pc,pdir))
@@ -116,7 +116,7 @@ while queue:
         if TURN_RIGHT[pdir] == d:
             pr = r - DIRS[d][0]
             pc = c - DIRS[d][1]
-            if 0 <= pr < m and 0 <= pc < n and matrix[pr][pc] != '#':
+            if matrix[pr][pc] != '#':
                 if dist[(pr,pc,pdir)] + 1001 == cur_cost:
                     if (pr,pc,pdir) not in back_visited:
                         back_visited.add((pr,pc,pdir))
