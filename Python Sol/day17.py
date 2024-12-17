@@ -220,4 +220,4 @@ def solve(goal, n=0, d=15):
 print(f"Part 2: {solve(goal)}")
 
 
-# F if you tried to brute force (me)
+# F if you tried to brute force (like me)
